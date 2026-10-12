@@ -25,6 +25,19 @@ REAL_HOME="${REAL_HOME:-$HOME}"
 export REAL_USER
 export REAL_HOME
 
+# ── Journal d'installation ───────────────────────────────────
+# Capture tout ce qui s'affiche (succès [✓] / échecs [✗] inclus,
+# sans les codes couleur) dans un fichier log horodaté — utile
+# pour le support si une installation ne se passe pas comme prévu.
+LOG_FILE="$REAL_HOME/toolkit-install-$(date +%Y%m%d-%H%M%S).log"
+export LOG_FILE
+exec > >(tee >(sed -r 's/\x1b\[[0-9;]*m//g' >> "$LOG_FILE")) 2>&1
+{
+  echo "=== toolkit lite — installation du $(date '+%d/%m/%Y %H:%M:%S') ==="
+  echo "Utilisateur : $REAL_USER (home: $REAL_HOME)"
+  echo ""
+} >> "$LOG_FILE"
+
 # ── Taille moyenne par outil (ajustable) ─────────────────────
 AVG_APT_MB=25
 AVG_GITHUB_MB=20
@@ -461,4 +474,15 @@ if [ "$CONFIGS_INSTALLED" = true ]; then
   echo -e "${GREEN}  Lance un nouveau terminal pour activer l'environnement.${NC}"
 fi
 echo -e "${GREEN}════════════════════════════════════════${NC}"
+echo ""
+
+# ── Résumé du log ─────────────────────────────────────────────
+NB_OK=$(grep -c '\[✓\]' "$LOG_FILE" 2>/dev/null || echo 0)
+NB_FAIL=$(grep -c '\[✗\]' "$LOG_FILE" 2>/dev/null || echo 0)
+echo -e "${CYAN}  Résumé : ${GREEN}${NB_OK} succès${NC} / ${RED}${NB_FAIL} échec(s)${NC}"
+echo -e "${CYAN}  Journal complet : ${YELLOW}${LOG_FILE}${NC}"
+if [ "$NB_FAIL" -gt 0 ]; then
+  echo -e "${YELLOW}  Ce qui a échoué :${NC}"
+  grep '\[✗\]' "$LOG_FILE" | sed 's/^/    /'
+fi
 echo ""
