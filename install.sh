@@ -18,8 +18,9 @@ TOOLKIT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIGS_INSTALLED=false
 
 # ── Résolution du vrai utilisateur ───────────────────────────
-REAL_USER="${SUDO_USER:-$USER}"
+REAL_USER="${SUDO_USER:-${USER:-$(id -un)}}"
 REAL_HOME=$(getent passwd "$REAL_USER" | cut -d: -f6)
+REAL_HOME="${REAL_HOME:-$HOME}"
 
 export REAL_USER
 export REAL_HOME
@@ -84,17 +85,7 @@ show_size_summary() {
   local v_wrd=$(printf "%-22s" "~${SIZE_WORDLISTS} Mo")
   local l_cfg=$(printf "%-30s" "Configs (dotfiles)")
   local v_cfg=$(printf "%-22s" "~${SIZE_CONFIGS} Mo")
-  local l_re=$(printf  "%-30s" "RE tools (opt. +Ghidra ~1Go)")
-  local v_re=$(printf  "%-22s" "~${SIZE_RE} Mo (+1 Go)")
-  local l_iot=$(printf "%-30s" "IoT & WiFi (optionnel)")
-  local v_iot=$(printf "%-22s" "~${SIZE_IOT} Mo")
-  local l_cm=$(printf  "%-30s" "Cloud & Mobile (optionnel)")
-  local v_cm=$(printf  "%-22s" "~${SIZE_CLOUDMOBILE} Mo")
-  local l_ad=$(printf  "%-30s" "Active Directory (optionnel)")
-  local v_ad=$(printf  "%-22s" "~${SIZE_AD} Mo")
-  local l_api=$(printf "%-30s" "API & GraphQL (optionnel)")
-  local v_api=$(printf "%-22s" "~${SIZE_API} Mo")
-  local l_tot=$(printf "%-30s" "TOTAL (sans modules opt.)")
+  local l_tot=$(printf "%-30s" "TOTAL")
   local v_tot=$(printf "%-22s" "~${total} Mo (~${total_gb} Go)")
   local l_dis=$(printf "%-30s" "Disponible sur $REAL_HOME")
   local v_dis=$(printf "%-22s" "~${available_mb} Mo (~${available_gb} Go)")
@@ -108,12 +99,6 @@ show_size_summary() {
   echo -e "${CYAN}  │${NC} ${l_cfg} ${CYAN}│${NC} ${YELLOW}${v_cfg}${NC} ${CYAN}│${NC}"
   echo -e "${CYAN}  ├────────────────────────────────┼────────────────────────┤${NC}"
   echo -e "${CYAN}  │${NC} ${GREEN}${l_tot}${NC} ${CYAN}│${NC} ${GREEN}${v_tot}${NC} ${CYAN}│${NC}"
-  echo -e "${CYAN}  ├────────────────────────────────┼────────────────────────┤${NC}"
-  echo -e "${CYAN}  │${NC} ${CYAN}${l_re}${NC} ${CYAN}│${NC} ${CYAN}${v_re}${NC} ${CYAN}│${NC}"
-  echo -e "${CYAN}  │${NC} ${CYAN}${l_iot}${NC} ${CYAN}│${NC} ${CYAN}${v_iot}${NC} ${CYAN}│${NC}"
-  echo -e "${CYAN}  │${NC} ${CYAN}${l_cm}${NC} ${CYAN}│${NC} ${CYAN}${v_cm}${NC} ${CYAN}│${NC}"
-  echo -e "${CYAN}  │${NC} ${CYAN}${l_ad}${NC} ${CYAN}│${NC} ${CYAN}${v_ad}${NC} ${CYAN}│${NC}"
-  echo -e "${CYAN}  │${NC} ${CYAN}${l_api}${NC} ${CYAN}│${NC} ${CYAN}${v_api}${NC} ${CYAN}│${NC}"
   echo -e "${CYAN}  ├────────────────────────────────┼────────────────────────┤${NC}"
   echo -e "${CYAN}  │${NC} ${l_dis} ${CYAN}│${NC} ${GREEN}${v_dis}${NC} ${CYAN}│${NC}"
   echo -e "${CYAN}  └────────────────────────────────┴────────────────────────┘${NC}"
