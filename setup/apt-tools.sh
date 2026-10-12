@@ -4,8 +4,9 @@
 # toolkit v1.4
 # ============================================================
 
-REAL_USER="${SUDO_USER:-$USER}"
-REAL_HOME=$(eval echo "~$REAL_USER")
+REAL_USER="${SUDO_USER:-${USER:-$(id -un)}}"
+REAL_HOME=$(getent passwd "$REAL_USER" | cut -d: -f6)
+REAL_HOME="${REAL_HOME:-$HOME}"
 
 RED='\033[0;31m'; GREEN='\033[1;35m'; YELLOW='\033[0;35m'; CYAN='\033[1;34m'; NC='\033[0m'
 
