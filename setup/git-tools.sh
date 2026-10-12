@@ -129,7 +129,12 @@ clone_tool "cupp"            "https://github.com/Mebus/cupp"
 clone_tool "username-anarchy" "https://github.com/urbanadventurer/username-anarchy"
 
 # Go tools
-run_cmd "phoneinfroga installé" "go install github.com/sundowndev/phoneinfoga/v2@latest"
+if ! command -v phoneinfoga &>/dev/null; then
+    PI_VERSION=$(curl -sL -o /dev/null -w '%{url_effective}' https://github.com/sundowndev/phoneinfoga/releases/latest | awk -F/ '{print $NF}' | tr -d 'v')
+    run_cmd "phoneinfroga installé" "curl -sL 'https://github.com/sundowndev/phoneinfoga/releases/download/v${PI_VERSION}/phoneinfoga_Linux_x86_64.tar.gz' -o /tmp/phoneinfoga.tar.gz && tar -xzf /tmp/phoneinfoga.tar.gz -C /usr/local/bin phoneinfoga && chmod +x /usr/local/bin/phoneinfoga"
+else
+    echo -e "  \033[0;36m[~]\033[0m phoneinfoga déjà installé"
+fi
 run_cmd "waybackurls installé" "go install github.com/tomnomnom/waybackurls@latest"
 
 # ─────────────────────────────────────────────
