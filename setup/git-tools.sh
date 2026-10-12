@@ -18,7 +18,13 @@ mkdir -p "$TOOLS"
 run_cmd() {
     local label="$1" cmd="$2"
     local output rc
-    output=$(eval "$cmd" 2>&1)
+    # Affichage en direct sur le vrai terminal (fd 3) si disponible — le
+    # journal, lui, ne reçoit le détail que si la commande échoue.
+    if { true >&3; } 2>/dev/null; then
+        output=$(eval "$cmd" 2>&1 | tee /dev/fd/3; exit "${PIPESTATUS[0]}")
+    else
+        output=$(eval "$cmd" 2>&1)
+    fi
     rc=$?
     if [ $rc -eq 0 ]; then
         echo -e "  ${GREEN}[✓]${NC} $label"

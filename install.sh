@@ -31,6 +31,9 @@ export REAL_HOME
 # pour le support si une installation ne se passe pas comme prévu.
 LOG_FILE="$REAL_HOME/toolkit-install-$(date +%Y%m%d-%H%M%S).log"
 export LOG_FILE
+# fd 3 = terminal réel (avant redirection), utilisé par run_cmd pour
+# afficher la sortie des commandes en direct SANS la logger (sauf échec).
+exec 3>&1
 exec > >(tee >(sed -r 's/\x1b\[[0-9;]*m//g' >> "$LOG_FILE")) 2>&1
 {
   echo "=== toolkit lite — installation du $(date '+%d/%m/%Y %H:%M:%S') ==="
@@ -89,7 +92,10 @@ info() { echo -e "${YELLOW}[>] $1${NC}"; }
 run_cmd() {
   local label="$1" cmd="$2"
   local output rc
-  output=$(eval "$cmd" 2>&1)
+  # Sortie de la commande affichée en direct sur le vrai terminal (fd 3,
+  # verbeux), tout en étant capturée pour ne logger le détail que si ça
+  # échoue (le journal reste silencieux sur les succès).
+  output=$(eval "$cmd" 2>&1 | tee /dev/fd/3; exit "${PIPESTATUS[0]}")
   rc=$?
   if [ $rc -eq 0 ]; then
     ok "$label"
