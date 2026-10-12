@@ -313,49 +313,6 @@ Certains outils de la Tools List Notion n'ont pas d'équivalent Linux installabl
 
 ---
 
-## 📋 Changelog
-
-### v2.0.0 (2026-10)
-- 🔀 Split lite / Pro : `setup/re-tools.sh`, `iot-tools.sh`, `cloud-mobile-tools.sh`, `ad-tools.sh`, `api-tools.sh` et leurs alias dédiés déménagent dans le pack **toolkit Pro** (payant)
-- ✅ Les modules [12] Active Directory et [13] API & GraphQL restent accessibles en lite via le menu "par catégorie" (installation outil par outil)
-- 🧹 `install.sh` : menu simplifié à 4 choix (Tout / Par catégorie / Wordlists / Configs), tailles recalculées
-- 🧹 `.zshrc` : retrait des sections Reverse Engineering et IoT & WiFi, ajout d'un hook de chargement optionnel `~/.toolkit-pro/aliases.zsh`
-- 📝 README mis à jour (structure, prérequis disque, aliases, changelog)
-
-### v1.4.0 (2026-10)
-- ✅ Réconciliation complète avec la Tools List Notion (179 outils)
-- ✅ Ajout `setup/ad-tools.sh` — module Active Directory (BloodHound, Kerbrute, NetExec, Responder, Certipy, LDAPDomainDump, ldap-utils)
-- ✅ Ajout `setup/api-tools.sh` — module API & GraphQL (graphw00f, GraphQL-COP, InQL, CyberChef hors-ligne)
-- ✅ apt-tools.sh : +22 outils (recon-ng, whois, dnsutils, xsser, clamav, socat, arp-scan, smbmap, smbclient, samba-common-bin, rpcbind, nfs-common, ident-user-enum, cewl, wpscan, fierce, tnscmd10g, ldap-utils, hash-identifier, radare2...)
-- ✅ git-tools.sh : +13 outils (theHarvester, CUPP, Username Anarchy, h8mail, Dirsearch, GraphQL-COP, graphw00f, InQL, PureDNS, Legba, Detect-It-Easy, Wister, kwprocessor, Ollama, CAI)
-- ✅ iot-tools.sh : +Thonny
-- ✅ install.sh : menu étendu à 9 modules optionnels + catégories 12 (AD) et 13 (API)
-
-### v1.3.0 (2026-10)
-- ✅ Ajout `setup/cloud-mobile-tools.sh` — module Cloud & Mobile (Prowler, ScoutSuite, CloudEnum, CloudSploit, S3Scanner, Pacu, ROADtools, Stormspotter, Gitleaks, Apktool, Jadx, Frida, Objection, Drozer, MobSF)
-
-### v1.2.0 (2026-05)
-- ✅ Suppression des doublons dans `install.sh` et `iot-tools.sh`
-- ✅ `#!/bin/bash` ne s'affiche plus à la fin de l'exécution
-- ✅ Message "Lance un nouveau terminal" conditionnel à l'installation des configs
-- ✅ **pipx** remplace pip pour tous les outils Python
-- ✅ `install_utils` s'exécute en premier — golang-go et pipx garantis avant tout outil
-- ✅ Venv isolé pour RouterSploit (plus de conflits apt/pip)
-- ✅ Vérification automatique de Go et pipx dans `git-tools.sh`
-
-### v1.1.0 (2026-05)
-- ✅ Ajout `setup/re-tools.sh` — module Reverse Engineering
-- ✅ Ajout `setup/iot-tools.sh` — module IoT & WiFi
-- ✅ apt-tools.sh : medusa, ncrack, gdb, binutils, strace, ltrace, binwalk, upx, tcpdump
-- ✅ git-tools.sh : holehe, trufflehog, phoneinfroga, waybackurls, GodPotato, PrintSpoofer, JuicyPotato, pwndbg
-- ✅ .zshrc : +30 nouveaux aliases (RE, IoT, WiFi, OSINT, PrivEsc)
-- ✅ install.sh : menu mis à jour avec modules 5 (RE) et 6 (IoT)
-
-### v1.0.0 (2026-05-26)
-- 🎉 Release initiale
-
----
-
 ## ⚠️ Disclaimer
 
 Usage **éducatif et légal uniquement**.
