@@ -318,7 +318,7 @@ install_osint_identity() {
   step "OSINT — pipx"
   run_cmd "h8mail installé" "su - '$REAL_USER' -c 'pipx install h8mail'"
   step "OSINT — Outils Go"
-  run_cmd "phoneinfroga installé" "go install github.com/sundowndev/phoneinfoga/v2/cmd/phoneinfoga@latest"
+  run_cmd "phoneinfroga installé" "go install github.com/sundowndev/phoneinfoga/v2@latest"
   run_cmd "waybackurls installé" "go install github.com/tomnomnom/waybackurls@latest"
 }
 

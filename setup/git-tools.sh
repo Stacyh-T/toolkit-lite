@@ -129,7 +129,7 @@ clone_tool "cupp"            "https://github.com/Mebus/cupp"
 clone_tool "username-anarchy" "https://github.com/urbanadventurer/username-anarchy"
 
 # Go tools
-run_cmd "phoneinfroga installé" "go install github.com/sundowndev/phoneinfoga/v2/cmd/phoneinfoga@latest"
+run_cmd "phoneinfroga installé" "go install github.com/sundowndev/phoneinfoga/v2@latest"
 run_cmd "waybackurls installé" "go install github.com/tomnomnom/waybackurls@latest"
 
 # ─────────────────────────────────────────────
