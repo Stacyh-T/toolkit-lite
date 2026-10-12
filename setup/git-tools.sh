@@ -12,17 +12,36 @@ RED='\033[0;31m'; GREEN='\033[1;35m'; YELLOW='\033[0;35m'; CYAN='\033[1;34m'; NC
 
 mkdir -p "$TOOLS"
 
+# Exécute une commande (sous forme de chaîne shell) : silencieux si succès,
+# affiche le détail (dernières lignes de sortie) si échec.
+run_cmd() {
+    local label="$1" cmd="$2"
+    local output rc
+    output=$(eval "$cmd" 2>&1)
+    rc=$?
+    if [ $rc -eq 0 ]; then
+        echo -e "  ${GREEN}[✓]${NC} $label"
+    else
+        echo -e "  ${RED}[✗]${NC} Échec : $label"
+        echo "$output" | tail -15 | sed 's/^/      /'
+    fi
+    return $rc
+}
+
 clone_tool() {
     local name="$1"
     local repo="$2"
     if [ -d "$TOOLS/$name" ]; then
         echo -e "  \033[0;36m[~]\033[0m $name déjà cloné — mise à jour..."
         git -C "$TOOLS/$name" pull -q 2>/dev/null || true
+        return
+    fi
+    local output
+    if output=$(git clone --depth=1 "$repo" "$TOOLS/$name" 2>&1); then
+        echo -e "  ${GREEN}[✓]${NC} $name cloné"
     else
-        echo -e "  ${CYAN}[+]${NC} Clonage de $name..."
-        git clone --depth=1 "$repo" "$TOOLS/$name" 2>/dev/null && \
-            echo -e "  ${GREEN}[✓]${NC} $name cloné" || \
-            echo -e "  ${RED}[✗]${NC} Échec : $name"
+        echo -e "  ${RED}[✗]${NC} Échec : $name"
+        echo "$output" | tail -15 | sed 's/^/      /'
     fi
 }
 
@@ -30,11 +49,14 @@ pipx_install() {
     local pkg="$1"
     if su - "$REAL_USER" -c "pipx list 2>/dev/null" | grep -q "$pkg"; then
         echo -e "  \033[0;36m[~]\033[0m $pkg déjà installé via pipx"
+        return
+    fi
+    local output
+    if output=$(su - "$REAL_USER" -c "pipx install $pkg" 2>&1); then
+        echo -e "  ${GREEN}[✓]${NC} $pkg installé"
     else
-        echo -e "  ${CYAN}[+]${NC} pipx install $pkg..."
-        su - "$REAL_USER" -c "pipx install $pkg" \
-            && echo -e "  ${GREEN}[✓]${NC} $pkg installé" \
-            || echo -e "  ${RED}[✗]${NC} Échec : $pkg"
+        echo -e "  ${RED}[✗]${NC} Échec : $pkg"
+        echo "$output" | tail -15 | sed 's/^/      /'
     fi
 }
 
@@ -43,11 +65,14 @@ pipx_install_local() {
     local tool_dir="$TOOLS/$name"
     if su - "$REAL_USER" -c "pipx list 2>/dev/null" | grep -q "$name"; then
         echo -e "  \033[0;36m[~]\033[0m $name déjà installé via pipx"
+        return
+    fi
+    local output
+    if output=$(su - "$REAL_USER" -c "pipx install $tool_dir" 2>&1); then
+        echo -e "  ${GREEN}[✓]${NC} $name installé"
     else
-        echo -e "  ${CYAN}[+]${NC} pipx install $name (local)..."
-        su - "$REAL_USER" -c "pipx install $tool_dir" \
-            && echo -e "  ${GREEN}[✓]${NC} $name installé" \
-            || echo -e "  ${RED}[✗]${NC} Échec : $name"
+        echo -e "  ${RED}[✗]${NC} Échec : $name"
+        echo "$output" | tail -15 | sed 's/^/      /'
     fi
 }
 
@@ -63,30 +88,19 @@ echo -e "  Dossier cible : ${YELLOW}$TOOLS${NC}\n"
 echo -e "${YELLOW}[*] Vérification des dépendances...${NC}"
 
 if ! command -v go &>/dev/null; then
-    echo -e "  ${CYAN}[+]${NC} Go non installé — installation..."
-    apt-get update -qq
-    apt-get install -y golang-go -qq && \
-        echo -e "  ${GREEN}[✓]${NC} golang-go installé" || \
-        echo -e "  ${RED}[✗]${NC} Échec installation golang-go"
+    run_cmd "golang-go installé" "apt-get update -qq && apt-get install -y golang-go -qq"
 else
     echo -e "  \033[0;36m[~]\033[0m Go déjà installé ($(go version | awk '{print $3}'))"
 fi
 
 if ! command -v pipx &>/dev/null; then
-    echo -e "  ${CYAN}[+]${NC} pipx non installé — installation..."
-    apt-get install -y pipx -qq && \
-        su - "$REAL_USER" -c "pipx ensurepath" &>/dev/null && \
-        echo -e "  ${GREEN}[✓]${NC} pipx installé" || \
-        echo -e "  ${RED}[✗]${NC} Échec installation pipx"
+    run_cmd "pipx installé" "apt-get install -y pipx -qq && su - '$REAL_USER' -c 'pipx ensurepath'"
 else
     echo -e "  \033[0;36m[~]\033[0m pipx déjà installé"
 fi
 
 if ! command -v git &>/dev/null; then
-    echo -e "  ${CYAN}[+]${NC} git non installé — installation..."
-    apt-get install -y git -qq && \
-        echo -e "  ${GREEN}[✓]${NC} git installé" || \
-        echo -e "  ${RED}[✗]${NC} Échec installation git"
+    run_cmd "git installé" "apt-get install -y git -qq"
 else
     echo -e "  \033[0;36m[~]\033[0m git déjà installé"
 fi
@@ -101,9 +115,7 @@ clone_tool "photon"          "https://github.com/s0md3v/Photon"
 clone_tool "social-analyzer" "https://github.com/qeeqbox/social-analyzer"
 clone_tool "theHarvester"    "https://github.com/laramies/theHarvester"
 if [ -f "$TOOLS/theHarvester/requirements.txt" ]; then
-    su - "$REAL_USER" -c "pip install -r '$TOOLS/theHarvester/requirements.txt' --break-system-packages" &>/dev/null \
-        && echo -e "  ${GREEN}[✓]${NC} theHarvester — dépendances installées" \
-        || echo -e "  ${RED}[✗]${NC} theHarvester — échec des dépendances"
+    run_cmd "theHarvester — dépendances installées" "su - '$REAL_USER' -c \"pip install -r '$TOOLS/theHarvester/requirements.txt' --break-system-packages\""
 fi
 
 # ─────────────────────────────────────────────
@@ -117,15 +129,8 @@ clone_tool "cupp"            "https://github.com/Mebus/cupp"
 clone_tool "username-anarchy" "https://github.com/urbanadventurer/username-anarchy"
 
 # Go tools
-echo -e "  ${CYAN}[+]${NC} Installation de phoneinfroga (Go)..."
-go install github.com/sundowndev/phoneinfoga/v2/cmd/phoneinfoga@latest 2>/dev/null && \
-    echo -e "  ${GREEN}[✓]${NC} phoneinfroga installé" || \
-    echo -e "  ${RED}[✗]${NC} Échec phoneinfroga"
-
-echo -e "  ${CYAN}[+]${NC} Installation de waybackurls (Go)..."
-go install github.com/tomnomnom/waybackurls@latest 2>/dev/null && \
-    echo -e "  ${GREEN}[✓]${NC} waybackurls installé" || \
-    echo -e "  ${RED}[✗]${NC} Échec waybackurls"
+run_cmd "phoneinfroga installé" "go install github.com/sundowndev/phoneinfoga/v2/cmd/phoneinfoga@latest"
+run_cmd "waybackurls installé" "go install github.com/tomnomnom/waybackurls@latest"
 
 # ─────────────────────────────────────────────
 # Web
@@ -141,9 +146,7 @@ clone_tool "graphql-cop"     "https://github.com/dolevf/graphql-cop"
 clone_tool "graphw00f"       "https://github.com/dolevf/graphw00f"
 for d in dirsearch graphql-cop graphw00f; do
     if [ -f "$TOOLS/$d/requirements.txt" ]; then
-        su - "$REAL_USER" -c "pip install -r '$TOOLS/$d/requirements.txt' --break-system-packages" &>/dev/null \
-            && echo -e "  ${GREEN}[✓]${NC} $d — dépendances installées" \
-            || echo -e "  ${RED}[✗]${NC} $d — échec des dépendances"
+        run_cmd "$d — dépendances installées" "su - '$REAL_USER' -c \"pip install -r '$TOOLS/$d/requirements.txt' --break-system-packages\""
     fi
 done
 pipx_install inql
@@ -154,15 +157,11 @@ pipx_install inql
 echo -e "\n${YELLOW}[*] Génération de wordlists${NC}"
 clone_tool "wister"          "https://github.com/cycurity/wister"
 if [ -f "$TOOLS/wister/requirements.txt" ]; then
-    su - "$REAL_USER" -c "pip install -r '$TOOLS/wister/requirements.txt' --break-system-packages" &>/dev/null \
-        && echo -e "  ${GREEN}[✓]${NC} wister — dépendances installées" \
-        || echo -e "  ${RED}[✗]${NC} wister — échec des dépendances"
+    run_cmd "wister — dépendances installées" "su - '$REAL_USER' -c \"pip install -r '$TOOLS/wister/requirements.txt' --break-system-packages\""
 fi
 clone_tool "kwprocessor"     "https://github.com/hashcat/kwprocessor"
 if [ -d "$TOOLS/kwprocessor" ]; then
-    su - "$REAL_USER" -c "cd '$TOOLS/kwprocessor' && make" &>/dev/null \
-        && echo -e "  ${GREEN}[✓]${NC} kwprocessor compilé" \
-        || echo -e "  ${RED}[✗]${NC} kwprocessor — échec de la compilation (make)"
+    run_cmd "kwprocessor compilé" "su - '$REAL_USER' -c \"cd '$TOOLS/kwprocessor' && make\""
 fi
 
 # ─────────────────────────────────────────────
@@ -173,13 +172,10 @@ clone_tool "impacket"        "https://github.com/fortra/impacket"
 clone_tool "smtp-user-enum"  "https://github.com/cytopia/smtp-user-enum"
 clone_tool "sipvicious"      "https://github.com/EnableSecurity/sipvicious"
 
-echo -e "  ${CYAN}[+]${NC} Installation de puredns (Go)..."
 if ! command -v massdns &>/dev/null; then
-    apt-get install -y massdns -qq 2>/dev/null
+    run_cmd "massdns installé" "apt-get install -y massdns -qq"
 fi
-go install github.com/d3mondev/puredns/v2@latest 2>/dev/null && \
-    echo -e "  ${GREEN}[✓]${NC} puredns installé" || \
-    echo -e "  ${RED}[✗]${NC} Échec puredns"
+run_cmd "puredns installé" "go install github.com/d3mondev/puredns/v2@latest"
 
 # ─────────────────────────────────────────────
 # Post-Exploitation
@@ -219,10 +215,7 @@ clone_tool "sshuttle"        "https://github.com/sshuttle/sshuttle"
 # sshuttle via pipx
 pipx_install sshuttle
 
-echo -e "  ${CYAN}[+]${NC} Installation de legba (Go)..."
-go install github.com/evilsocket/legba@latest 2>/dev/null && \
-    echo -e "  ${GREEN}[✓]${NC} legba installé" || \
-    echo -e "  ${RED}[✗]${NC} Échec legba"
+run_cmd "legba installé" "go install github.com/evilsocket/legba@latest"
 
 # ─────────────────────────────────────────────
 # Reverse Engineering
@@ -231,11 +224,8 @@ echo -e "\n${YELLOW}[*] Reverse Engineering${NC}"
 clone_tool "pwndbg"          "https://github.com/pwndbg/pwndbg"
 
 if ! command -v diec &>/dev/null; then
-    echo -e "  ${CYAN}[+]${NC} Installation de Detect-It-Easy (snap)..."
     if command -v snap &>/dev/null; then
-        snap install detect-it-easy &>/dev/null && \
-            echo -e "  ${GREEN}[✓]${NC} detect-it-easy installé" || \
-            echo -e "  ${RED}[✗]${NC} Échec detect-it-easy — voir https://github.com/horsicq/Detect-It-Easy/releases"
+        run_cmd "detect-it-easy installé" "snap install detect-it-easy"
     else
         echo -e "  ${RED}[✗]${NC} snap indisponible — installer manuellement : https://github.com/horsicq/Detect-It-Easy/releases"
     fi
@@ -248,18 +238,13 @@ fi
 # ─────────────────────────────────────────────
 echo -e "\n${YELLOW}[*] Automatisation / IA offensive${NC}"
 if ! command -v ollama &>/dev/null; then
-    echo -e "  ${CYAN}[+]${NC} Installation d'Ollama..."
-    curl -fsSL https://ollama.ai/install.sh 2>/dev/null | sh &>/dev/null && \
-        echo -e "  ${GREEN}[✓]${NC} Ollama installé" || \
-        echo -e "  ${RED}[✗]${NC} Échec installation Ollama"
+    run_cmd "Ollama installé" "curl -fsSL https://ollama.ai/install.sh | sh"
 else
     echo -e "  \033[0;36m[~]\033[0m Ollama déjà installé"
 fi
 clone_tool "cai"             "https://github.com/aliasrobotics/cai"
 if [ -d "$TOOLS/cai" ]; then
-    su - "$REAL_USER" -c "cd '$TOOLS/cai' && pip install . --break-system-packages" &>/dev/null \
-        && echo -e "  ${GREEN}[✓]${NC} cai installé" \
-        || echo -e "  ${RED}[✗]${NC} cai — échec de l'installation"
+    run_cmd "cai installé" "su - '$REAL_USER' -c \"cd '$TOOLS/cai' && pip install . --break-system-packages\""
 fi
 
 # ─────────────────────────────────────────────

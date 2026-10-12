@@ -13,11 +13,14 @@ install_apt() {
     local pkg="$1"
     if dpkg -s "$pkg" &>/dev/null; then
         echo -e "  \033[0;36m[~]\033[0m $pkg déjà installé"
+        return
+    fi
+    local output
+    if output=$(apt install -y "$pkg" 2>&1); then
+        echo -e "  ${GREEN}[✓]${NC} $pkg installé"
     else
-        echo -e "  ${CYAN}[+]${NC} Installation de $pkg..."
-        apt install -y "$pkg" 2>/dev/null && \
-            echo -e "  ${GREEN}[✓]${NC} $pkg installé" || \
-            echo -e "  ${RED}[✗]${NC} Échec : $pkg"
+        echo -e "  ${RED}[✗]${NC} Échec : $pkg"
+        echo "$output" | tail -15 | sed 's/^/      /'
     fi
 }
 
