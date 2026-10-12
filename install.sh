@@ -45,8 +45,10 @@ SIZE_WORDLISTS=1200
 SIZE_CONFIGS=1
 
 # ── Calcul dynamique ─────────────────────────────────────────
-NB_APT=$(grep -c "install_apt" "$TOOLKIT_DIR/setup/apt-tools.sh" 2>/dev/null || echo 0)
-NB_GITHUB=$(grep -c "clone_tool\|install_category_github" "$TOOLKIT_DIR/setup/git-tools.sh" 2>/dev/null || echo 0)
+NB_APT=$(grep -c "install_apt" "$TOOLKIT_DIR/setup/apt-tools.sh" 2>/dev/null)
+NB_APT=${NB_APT:-0}
+NB_GITHUB=$(grep -c "clone_tool\|install_category_github" "$TOOLKIT_DIR/setup/git-tools.sh" 2>/dev/null)
+NB_GITHUB=${NB_GITHUB:-0}
 SIZE_APT=$(( NB_APT * AVG_APT_MB ))
 SIZE_GITHUB=$(( NB_GITHUB * AVG_GITHUB_MB ))
 
@@ -469,8 +471,10 @@ echo -e "${GREEN}═════════════════════
 echo ""
 
 # ── Résumé du log ─────────────────────────────────────────────
-NB_OK=$(grep -c '\[✓\]' "$LOG_FILE" 2>/dev/null || echo 0)
-NB_FAIL=$(grep -c '\[✗\]' "$LOG_FILE" 2>/dev/null || echo 0)
+NB_OK=$(grep -c '\[✓\]' "$LOG_FILE" 2>/dev/null)
+NB_OK=${NB_OK:-0}
+NB_FAIL=$(grep -c '\[✗\]' "$LOG_FILE" 2>/dev/null)
+NB_FAIL=${NB_FAIL:-0}
 echo -e "${CYAN}  Résumé : ${GREEN}${NB_OK} succès${NC} / ${RED}${NB_FAIL} échec(s)${NC}"
 echo -e "${CYAN}  Journal complet : ${YELLOW}${LOG_FILE}${NC}"
 if [ "$NB_FAIL" -gt 0 ]; then
