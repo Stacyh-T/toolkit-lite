@@ -82,6 +82,22 @@ warn() { echo -e "${YELLOW}[!] Avertissement : $1${NC}"; }
 fail() { echo -e "${RED}[✗] Erreur : $1${NC}"; }
 info() { echo -e "${YELLOW}[>] $1${NC}"; }
 
+# Exécute une commande (chaîne shell) : silencieux si succès, affiche
+# le détail (dernières lignes de sortie) si échec.
+run_cmd() {
+  local label="$1" cmd="$2"
+  local output rc
+  output=$(eval "$cmd" 2>&1)
+  rc=$?
+  if [ $rc -eq 0 ]; then
+    ok "$label"
+  else
+    fail "$label"
+    echo "$output" | tail -15 | sed 's/^/      /'
+  fi
+  return $rc
+}
+
 # ── Résumé espace disque ─────────────────────────────────────
 show_size_summary() {
   local available_mb
@@ -155,13 +171,7 @@ install_category_apt() {
     if command -v "$tool" &>/dev/null || dpkg -s "$tool" &>/dev/null 2>&1; then
       echo -e "\033[0;36m[~]\033[0m L'outil '$tool' est déjà installé — ignoré."
     else
-      info "Installation de '$tool' via APT..."
-      apt-get install -y "$tool"
-      if [ $? -eq 0 ]; then
-        ok "'$tool' installé avec succès."
-      else
-        fail "Échec de l'installation pour '$tool'."
-      fi
+      run_cmd "'$tool' installé" "apt-get install -y '$tool'"
     fi
   done
 }
@@ -178,22 +188,9 @@ install_category_github() {
     local dest="$REAL_HOME/tools/$name"
     mkdir -p "$REAL_HOME/tools"
     if [ -d "$dest" ]; then
-      info "Vérification des mises à jour pour '$name'..."
-      git -C "$dest" pull
-      if [ $? -eq 0 ]; then
-        ok "'$name' mis à jour ou déjà à jour."
-      else
-        fail "Erreur lors du pull pour '$name'."
-      fi
+      run_cmd "'$name' mis à jour" "git -C '$dest' pull"
     else
-      info "Clonage de '$name' depuis $url..."
-      git clone --depth=1 "$url" "$dest"
-      if [ $? -eq 0 ]; then
-        ok "'$name' cloné dans $dest."
-        chown -R "$REAL_USER":"$REAL_USER" "$dest"
-      else
-        fail "Échec du clonage pour '$name'."
-      fi
+      run_cmd "'$name' cloné dans $dest" "git clone --depth=1 '$url' '$dest' && chown -R '$REAL_USER':'$REAL_USER' '$dest'"
     fi
   done
 }
@@ -319,15 +316,10 @@ install_osint_identity() {
     "cupp|https://github.com/Mebus/cupp" \
     "username-anarchy|https://github.com/urbanadventurer/username-anarchy"
   step "OSINT — pipx"
-  su - "$REAL_USER" -c "pipx install h8mail" \
-    && ok "h8mail installé" || fail "Échec h8mail"
+  run_cmd "h8mail installé" "su - '$REAL_USER' -c 'pipx install h8mail'"
   step "OSINT — Outils Go"
-  info "Installation de phoneinfroga (Go)..."
-  go install github.com/sundowndev/phoneinfoga/v2/cmd/phoneinfoga@latest \
-    && ok "phoneinfroga installé" || fail "Échec phoneinfroga"
-  info "Installation de waybackurls (Go)..."
-  go install github.com/tomnomnom/waybackurls@latest \
-    && ok "waybackurls installé" || fail "Échec waybackurls"
+  run_cmd "phoneinfroga installé" "go install github.com/sundowndev/phoneinfoga/v2/cmd/phoneinfoga@latest"
+  run_cmd "waybackurls installé" "go install github.com/tomnomnom/waybackurls@latest"
 }
 
 install_web() {
@@ -341,8 +333,7 @@ install_web() {
     "droopescan|https://github.com/SamJoan/droopescan" \
     "dirsearch|https://github.com/maurosoria/dirsearch"
   step "Web Security — pipx"
-  su - "$REAL_USER" -c "pipx install inql" \
-    && ok "inql installé" || fail "Échec inql"
+  run_cmd "inql installé" "su - '$REAL_USER' -c 'pipx install inql'"
 }
 
 install_network() {
@@ -357,10 +348,9 @@ install_network() {
     "svmap|https://github.com/EnableSecurity/sipvicious"
   step "Network — Go"
   if ! command -v massdns &>/dev/null; then
-    apt-get install -y massdns -qq 2>/dev/null
+    run_cmd "massdns installé" "apt-get install -y massdns -qq"
   fi
-  go install github.com/d3mondev/puredns/v2@latest \
-    && ok "puredns installé" || fail "Échec puredns"
+  run_cmd "puredns installé" "go install github.com/d3mondev/puredns/v2@latest"
 }
 
 install_passwords() {
@@ -376,13 +366,11 @@ install_passwords() {
 install_ad() {
   step "Active Directory"
   install_category_apt "Active Directory" ldap-utils
-  info "Installation de bloodhound-ce, ldapdomaindump, certipy-ad, netexec (pipx)..."
-  su - "$REAL_USER" -c "pipx install bloodhound-ce" && ok "bloodhound-ce installé" || fail "Échec bloodhound-ce"
-  su - "$REAL_USER" -c "pipx install ldapdomaindump" && ok "ldapdomaindump installé" || fail "Échec ldapdomaindump"
-  su - "$REAL_USER" -c "pipx install certipy-ad" && ok "certipy-ad installé" || fail "Échec certipy-ad"
-  su - "$REAL_USER" -c "pipx install git+https://github.com/Pennyw0rth/NetExec" && ok "netexec installé" || fail "Échec netexec"
-  info "Installation de kerbrute (Go)..."
-  go install github.com/ropnop/kerbrute@latest && ok "kerbrute installé" || fail "Échec kerbrute"
+  run_cmd "bloodhound-ce installé" "su - '$REAL_USER' -c 'pipx install bloodhound-ce'"
+  run_cmd "ldapdomaindump installé" "su - '$REAL_USER' -c 'pipx install ldapdomaindump'"
+  run_cmd "certipy-ad installé" "su - '$REAL_USER' -c 'pipx install certipy-ad'"
+  run_cmd "netexec installé" "su - '$REAL_USER' -c 'pipx install git+https://github.com/Pennyw0rth/NetExec'"
+  run_cmd "kerbrute installé" "go install github.com/ropnop/kerbrute@latest"
   install_category_github "Active Directory" \
     "Responder|https://github.com/lgandx/Responder"
   warn "Rubeus (Windows/.NET) et Active Directory (service Windows Server) n'ont pas d'équivalent Linux"
@@ -394,8 +382,7 @@ install_api() {
   install_category_github "API & GraphQL" \
     "graphw00f|https://github.com/dolevf/graphw00f" \
     "graphql-cop|https://github.com/dolevf/graphql-cop"
-  info "Installation d'inql (pipx)..."
-  su - "$REAL_USER" -c "pipx install inql" && ok "inql installé" || fail "Échec inql"
+  run_cmd "inql installé" "su - '$REAL_USER' -c 'pipx install inql'"
 }
 
 install_postexploit() {
